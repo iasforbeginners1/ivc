@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
+    <title>Indus Valley: North to South Challenge</title>
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --red: #ff4757; --green: #2ecc71; --dark: #0a0a0c; --glass: rgba(255, 255, 255, 0.08); }
+        
+        body { font-family: 'Exo 2', sans-serif; background: var(--dark); color: white; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; touch-action: manipulation; }
+
+        /* Screens Management */
+        .screen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.5s ease; background: var(--dark); z-index: 10; padding: 20px; box-sizing: border-box; }
+        .hidden { opacity: 0; pointer-events: none; transform: scale(0.95); }
+        #scr-end { z-index: 100; background: rgba(10, 10, 12, 0.95); }
+
+        /* UI/UX - Glassmorphism */
+        .glass-card { background: var(--glass); backdrop-filter: blur(15px); padding: 30px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.1); text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.5); width: 100%; max-width: 500px; }
+        h1 { font-size: 2.5rem; margin: 0; background: linear-gradient(to right, #ff4757, #f1c40f); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 900; }
+        
+        .instr { text-align: left; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; margin: 20px 0; font-size: 0.9rem; color: #ddd; line-height: 1.6; }
+        .btn { background: var(--red); color: white; border: none; padding: 15px 40px; font-size: 1.2rem; font-weight: 900; border-radius: 50px; cursor: pointer; transition: 0.3s; text-transform: uppercase; letter-spacing: 1px; }
+        .btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(255,71,87,0.4); }
+        .btn:disabled { background: #444; cursor: not-allowed; }
+
+        /* Game HUD */
+        .hud { display: flex; justify-content: space-between; width: 100%; max-width: 1000px; padding: 10px 25px; background: var(--glass); border-radius: 50px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1); box-sizing: border-box; }
+        #timer { font-size: 1.5rem; font-weight: 900; color: #f1c40f; }
+        #timer.critical { color: var(--red); animation: pulse 0.5s infinite; }
+
+        /* Label Bank */
+        .bank { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; width: 100%; max-width: 1000px; margin-bottom: 15px; }
+        .chip { padding: 10px 18px; background: transparent; border: 2px solid var(--red); color: var(--red); border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 0.9rem; transition: 0.2s; }
+        .chip.active { background: var(--red); color: white; box-shadow: 0 0 15px var(--red); transform: scale(1.05); }
+        .chip.done { opacity: 0; pointer-events: none; }
+
+        /* Responsive Map Viewport */
+        .viewport { position: relative; width: 100%; max-width: 1000px; flex-grow: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        #map-container { position: relative; width: 100%; height: auto; aspect-ratio: 1024 / 576; background: white; border-radius: 15px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 4px solid #fff; }
+        #bg-img { width: 100%; height: 100%; object-fit: contain; border-radius: 12px; }
+
+        /* Percentage Based Targets (Based on your red markers) */
+        .target { position: absolute; background: rgba(255, 71, 87, 0.1); border: 2px dashed rgba(255, 71, 87, 0.5); border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; color: transparent; transition: 0.3s; z-index: 5; }
+        .target:hover { background: rgba(255, 71, 87, 0.2); border-color: var(--red); }
+        .target.filled { background: var(--green) !important; border: 2px solid #16a085 !important; color: white !important; font-size: 13px; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+
+        /* North to South Sequence Targets */
+        .t-manda { top: 10.5%; left: 66%; width: 11%; height: 6%; }
+        .t-harappa { top: 29.5%; left: 52%; width: 10%; height: 6%; }
+        .t-kali { top: 46.5%; left: 58.5%; width: 10%; height: 6%; }
+        .t-mohenjo { top: 52%; left: 39%; width: 12%; height: 7%; }
+        .t-kotdiji { top: 59%; left: 46.5%; width: 10%; height: 6%; }
+        .t-dholavira { top: 71.5%; left: 52.5%; width: 10%; height: 6%; }
+        .t-lothal { top: 85.5%; left: 54.5%; width: 9%; height: 6%; }
+
+        /* Feedback Animations */
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+        .shake { animation: shake 0.3s ease-in-out; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        
+        #final-score { font-size: 4rem; font-weight: 900; color: var(--green); margin: 10px 0; }
+    </style>
+</head>
+<body>
+
+    <div id="scr-start" class="screen">
+        <div class="glass-card">
+            <h1>INDUS VALLEY MAP</h1>
+            <div class="instr">
+                <b>Kaise Khele:</b><br>
+                1. Upar se site ka naam select karein.<br>
+                2. Map par sahi 🔴 box par click karein.<br>
+                3. Aapko <b>North se South</b> (Upar se Neeche) arrange karna hai.<br>
+                ⚠️ Samay: 45 Seconds. Galti par 5s penalty!
+            </div>
+            <p id="load-msg">Assets load ho rahe hain...</p>
+            <button id="btn-start" class="btn" onclick="initGame()" disabled>Start Challenge</button>
+        </div>
+    </div>
+
+    <div id="scr-game" class="screen hidden">
+        <div class="hud">
+            <div id="timer">00:45</div>
+            <div style="font-weight: 800;">Mastery: <span id="score-val">0</span> / 7</div>
+        </div>
+
+        <div class="bank" id="chip-bank">
+            <button class="chip" data-id="manda" onclick="pick(this, 'manda')">Manda</button>
+            <button class="chip" data-id="harappa" onclick="pick(this, 'harappa')">Harappa</button>
+            <button class="chip" data-id="kali" onclick="pick(this, 'kali')">Kalibangan</button>
+            <button class="chip" data-id="mohenjo" onclick="pick(this, 'mohenjo')">Mohenjo-daro</button>
+            <button class="chip" data-id="kotdiji" onclick="pick(this, 'kotdiji')">Kotdiji</button>
+            <button class="chip" data-id="dholavira" onclick="pick(this, 'dholavira')">Dholavira</button>
+            <button class="chip" data-id="lothal" onclick="pick(this, 'lothal')">Lothal</button>
+        </div>
+
+        <div class="viewport">
+            <div id="map-container">
+                <img id="bg-img" src="game_bg.png" alt="Map Missing" onload="enableBtn()">
+                
+                <div class="target t-manda" data-id="manda" onclick="check(this)">TARGET</div>
+                <div class="target t-harappa" data-id="harappa" onclick="check(this)">TARGET</div>
+                <div class="target t-kali" data-id="kali" onclick="check(this)">TARGET</div>
+                <div class="target t-mohenjo" data-id="mohenjo" onclick="check(this)">TARGET</div>
+                <div class="target t-kotdiji" data-id="kotdiji" onclick="check(this)">TARGET</div>
+                <div class="target t-dholavira" data-id="dholavira" onclick="check(this)">TARGET</div>
+                <div class="target t-lothal" data-id="lothal" onclick="check(this)">TARGET</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="scr-end" class="screen hidden">
+        <div class="glass-card">
+            <h2 id="res-title">Mission Accomplished</h2>
+            <div id="final-score">0/7</div>
+            <p id="res-msg" style="color: #ccc; margin-bottom: 20px;"></p>
+            <button class="btn" onclick="location.reload()">Try Again</button>
+        </div>
+    </div>
+
+    <script>
+        let timeLeft = 45;
+        let timerRunning = false;
+        let selectedId = null;
+        let selectedBtn = null;
+        let score = 0;
+        let audioCtx = null;
+
+        // Assets Loading
+        function enableBtn() {
+            document.getElementById('btn-start').disabled = false;
+            document.getElementById('load-msg').innerText = "System Ready!";
+            document.getElementById('load-msg').style.color = "var(--green)";
+        }
+
+        // Standard Audio Beep API
+        function beep(freq, type) {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = type; osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+        }
+
+        function initGame() {
+            // Shuffle labels
+            const bank = document.getElementById('chip-bank');
+            for (let i = bank.children.length; i >= 0; i--) bank.appendChild(bank.children[Math.random() * i | 0]);
+
+            document.getElementById('scr-start').classList.add('hidden');
+            document.getElementById('scr-game').classList.remove('hidden');
+            timerRunning = true;
+            runTimer();
+        }
+
+        function runTimer() {
+            const tEl = document.getElementById('timer');
+            const interval = setInterval(() => {
+                if(!timerRunning) { clearInterval(interval); return; }
+                timeLeft--;
+                
+                let s = timeLeft % 60;
+                tEl.innerText = `00:${s < 10 ? '0' + s : s}`;
+                
+                if(timeLeft <= 10) tEl.classList.add('critical');
+                if(timeLeft <= 0) { clearInterval(interval); endGame(false); }
+            }, 1000);
+        }
+
+        function pick(btn, id) {
+            beep(440, 'sine');
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+            selectedId = id;
+            selectedBtn = btn;
+            btn.classList.add('active');
+        }
+
+        function check(zone) {
+            const container = document.getElementById('map-container');
+            if(!selectedId) {
+                container.classList.add('shake');
+                setTimeout(() => container.classList.remove('shake'), 300);
+                return;
+            }
+
+            if(selectedId === zone.getAttribute('data-id')) {
+                // Sahi Jawab
+                beep(880, 'sine');
+                zone.classList.add('filled');
+                zone.innerText = selectedBtn.innerText;
+                zone.onclick = null;
+                selectedBtn.classList.add('done');
+                selectedId = null;
+                score++;
+                document.getElementById('score-val').innerText = score;
+                if(score === 7) endGame(true);
+            } else {
+                // Galat Jawab (Penalty & Shake)
+                beep(150, 'sawtooth');
+                timeLeft -= 5;
+                if(navigator.vibrate) navigator.vibrate(200);
+                zone.classList.add('shake');
+                setTimeout(() => zone.classList.remove('shake'), 300);
+            }
+        }
+
+        function endGame(won) {
+            timerRunning = false;
+            document.getElementById('scr-game').classList.add('hidden');
+            document.getElementById('scr-end').classList.remove('hidden');
+            
+            const title = document.getElementById('res-title');
+            const finalScore = document.getElementById('final-score');
+            const msg = document.getElementById('res-msg');
+
+            finalScore.innerText = `${score} / 7`;
+            
+            if(won) {
+                title.innerText = "History Master! 🏛️";
+                title.style.color = "var(--green)";
+                msg.innerText = `Shaandaar! Aapne Indus Valley sites ko perfect sequence mein arrange kiya!`;
+            } else {
+                title.innerText = "Archeologist in Training 🔎";
+                title.style.color = "var(--red)";
+                msg.innerText = `Samay khatam! Aapko thoda aur abhyas karne ki zaroorat hai.`;
+            }
+        }
+    </script>
+</body>
+</html>
